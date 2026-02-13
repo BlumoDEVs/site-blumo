@@ -1,0 +1,19 @@
+.bpe-configurator,
+.bpe-upload {
+  margin: 1rem 0;
+  padding: 1rem;
+  border-radius: 14px;
+}
+
+.bpe-configurator label,
+.bpe-upload label {
+  display: block;
+  margin: 0.45rem 0;
+}
+
+.bpe-configurator select {
+  width: 100%;
+  padding: 0.55rem;
+  border-radius: 10px;
+  border: 1px solid #ddd1c4;
+}
