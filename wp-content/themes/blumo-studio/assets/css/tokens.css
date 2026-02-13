@@ -1,0 +1,12 @@
+:root {
+  --blumo-bg: #f5efe6;
+  --blumo-paper: #fffaf3;
+  --blumo-ink: #2b2a29;
+  --blumo-muted: #6f6a65;
+  --blumo-accent: #d8b7a2;
+  --blumo-accent-soft: #ead7ca;
+  --blumo-radius: 16px;
+  --blumo-shadow-soft: 0 8px 24px rgba(74, 59, 49, 0.08);
+  --blumo-shadow-lift: 0 12px 30px rgba(74, 59, 49, 0.12);
+  --blumo-transition: 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}

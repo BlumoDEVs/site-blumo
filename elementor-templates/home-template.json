@@ -1,0 +1,20 @@
+{
+  "title": "BLUMO Home",
+  "type": "page",
+  "version": "0.4",
+  "content": [
+    {
+      "id": "hero",
+      "elType": "section",
+      "settings": {
+        "background_background": "classic",
+        "css_classes": "blumo-paper",
+        "custom_css": ".elementor-section{overflow:hidden;}"
+      },
+      "elements": [
+        {"id": "headline", "elType": "widget", "widgetType": "heading", "settings": {"title": "Retratos em aguarela com alma."}},
+        {"id": "sub", "elType": "widget", "widgetType": "text-editor", "settings": {"editor": "Escolhe, faz upload e acompanha tudo em tempo real."}}
+      ]
+    }
+  ]
+}
