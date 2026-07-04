@@ -1,41 +1,211 @@
 import './style.css';
 
-const asks: string[]=['Onde está a saída?','Esta cama cabe no meu Fiat Punto?','Tem isto em amarelo, mas mais azul?','Posso levar o quarto inteiro no carrinho?','Este roupeiro vem já montado?','As almofadas têm manual?'];
-const quotes: string[]=['Está tratado!','Isto não vinha no manual.','Mais uma cama, menos um problema.','Quem deixou este roupeiro aqui?','Eu só queria acabar o turno.'];
-const powers: Power[]=['Café de Máquina','Chave Allen Lendária','Modo Sorriso Profissional','Pausa de 5 Minutos','Crachá Dourado'];
-type Power='Café de Máquina'|'Chave Allen Lendária'|'Modo Sorriso Profissional'|'Pausa de 5 Minutos'|'Crachá Dourado';
-type Item={id:number;type:'bed'|'pillow'|'tag'|'wardrobe'|'power';x:number;y:number;done?:boolean;power?:Power};
-type Customer={id:number;x:number;y:number;patience:number;ask:string;happy?:number};
-type Vec={x:number;y:number};
-const canvas=document.getElementById('game') as HTMLCanvasElement;
-const ctx=canvas.getContext('2d') as CanvasRenderingContext2D;
-const panel=document.getElementById('panel') as HTMLDivElement;
-const toast=document.getElementById('toast') as HTMLDivElement;
-const ui={score:document.getElementById('score') as HTMLSpanElement,time:document.getElementById('time') as HTMLSpanElement,chaos:document.getElementById('chaosBar') as HTMLElement};
-const luisPhoto=new Image(); luisPhoto.src='/luis.jpg'; const keys:Record<string,boolean>={}, pointer={active:false,x:0,y:0}; let screen:'menu'|'inst'|'play'|'over'='menu', score=0, chaos=10, time=300, mini:null|{t:number;need:number;hit:number}=null; let toastTimer=0;
-let g:{l:Vec;items:Item[];customers:Customer[];tick:number;freeze:number;speed:number;allen:number;smile:number;photo:number}={l:{x:420,y:310},items:[],customers:[],tick:0,freeze:0,speed:0,allen:0,smile:0,photo:0};
-function clamp(v:number,a:number,b:number){return Math.max(a,Math.min(b,v))} function dist(a:Vec,b:Vec){return Math.hypot(a.x-b.x,a.y-b.y)}
-function setPanel(html=''){panel.innerHTML=html;panel.style.display=html?'block':'none'}
-function menu(){screen='menu';setPanel(`<h1>LUÍS: O REI DOS QUARTOS</h1><p>O departamento abre em 5 minutos. As almofadas já sabem.</p><button id="start">COMEÇAR O TURNO</button><button id="inst">INSTRUÇÕES</button><ol><li>Zé das Almofadas</li><li>Marta do Roupeiro</li><li>Cliente Sem Medidas</li><li>Luís Supremo</li></ol>`);(document.getElementById('start') as HTMLButtonElement).onclick=reset;(document.getElementById('inst') as HTMLButtonElement).onclick=instructions}
-function instructions(){screen='inst';setPanel(`<h2>Instruções</h2><p>Move o Luís, aproxima-te de objetos/clientes e carrega Espaço ou E. Baixa o caos, ganha power-ups e sobrevive ao turno.</p><button id="back">VOLTAR</button>`);(document.getElementById('back') as HTMLButtonElement).onclick=menu}
-function over(){screen='over';setPanel(`<h1>Fim do turno</h1><p>O departamento venceu. Luís tentou, mas as almofadas eram demasiadas.</p><h2>${score} pontos</h2><button id="again">TENTAR OUTRA VEZ</button>`);(document.getElementById('again') as HTMLButtonElement).onclick=reset}
-function reset(){g={l:{x:420,y:310},items:spawnItems(),customers:spawnCustomers(),tick:0,freeze:0,speed:0,allen:0,smile:0,photo:0};score=0;chaos=8;time=300;mini=null;screen='play';setPanel('');say('Faltam 5 minutos para abrir a MÓVEA!')}
-function say(s:string){toast.textContent=s;toast.classList.remove('hidden');clearTimeout(toastTimer);toastTimer=window.setTimeout(()=>toast.classList.add('hidden'),1800)}
-addEventListener('keydown',(e:KeyboardEvent)=>{keys[e.key.toLowerCase()]=true;if(e.key===' ')e.preventDefault()});addEventListener('keyup',(e:KeyboardEvent)=>keys[e.key.toLowerCase()]=false);
-function mapPointer(e:PointerEvent){const r=canvas.getBoundingClientRect();pointer.x=(e.clientX-r.left)/r.width*1000;pointer.y=(e.clientY-r.top)/r.height*650;pointer.active=true} canvas.onpointerdown=mapPointer;canvas.onpointermove=(e:PointerEvent)=>{if(e.buttons)mapPointer(e)};canvas.onpointerup=()=>pointer.active=false;
-function update(dt:number){g.tick+=dt;(['freeze','speed','allen','smile','photo'] as const).forEach(k=>{if(g[k]>0)g[k]-=dt});time-=dt;if(time<=0)return over();let vx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0),vy=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);if(pointer.active){vx=pointer.x-g.l.x;vy=pointer.y-g.l.y;if(Math.hypot(vx,vy)<18)vx=vy=0}const m=Math.hypot(vx,vy)||1;g.l.x=clamp(g.l.x+vx/m*(g.speed>0?260:150)*dt,35,965);g.l.y=clamp(g.l.y+vy/m*(g.speed>0?260:150)*dt,70,620);
- if(g.tick>8){g.tick=0;g.customers.push({id:Date.now(),x:920,y:80+Math.random()*480,patience:100,ask:asks[Math.floor(Math.random()*asks.length)]});if(Math.random()<.75)g.items.push(makeItem(Date.now()))}
- g.customers.forEach(c=>{if(g.freeze<=0){c.patience-=dt*(g.smile>0?1.5:6+chaos/10);c.x+=Math.sin(Date.now()/700+c.id)*8*dt}if(c.happy)c.happy-=dt});g.customers=g.customers.filter(c=>c.patience>0&&(!c.happy||c.happy>0));const angry=g.customers.filter(c=>c.patience<30).length;chaos=clamp(chaos+angry*dt*.9+(g.customers.length>5?dt*2:0)-dt*1.6,0,100);if(chaos>=99)return over();
- if(keys[' ']||keys.e){for(const it of g.items){if(!it.done&&dist(g.l,it)<48){handleItem(it);break}}for(const c of g.customers){if(!c.happy&&dist(g.l,c)<58){c.happy=1.2;score+=75;say('Cliente convencido: “Perfeito, era quase isto!”');chaos=clamp(chaos-8,0,100);break}}}
- if(mini){mini.t-=dt;if(keys[' ']&&mini.t>0){mini.hit++;keys[' ']=false}if(mini.t<=0){if(mini.hit>=mini.need){score+=350;say('Cama montada com estilo olímpico!')}else chaos=clamp(chaos+18,0,100);mini=null}}
+type Screen = 'menu' | 'playing' | 'over';
+type Pipe = { x: number; gapY: number; gap: number; scored: boolean; kind: 'roupeiro' | 'cama' | 'placa' };
+type Particle = { x: number; y: number; vx: number; vy: number; life: number; color: string; size: number };
+
+const canvas = document.getElementById('game') as HTMLCanvasElement;
+const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
+const panel = document.getElementById('panel') as HTMLDivElement;
+const toast = document.getElementById('toast') as HTMLDivElement;
+const scoreEl = document.getElementById('score') as HTMLSpanElement;
+const bestEl = document.getElementById('best') as HTMLSpanElement;
+
+const luisPhoto = new Image();
+luisPhoto.src = '/luis.jpg';
+
+const jokes = [
+  'Isto cabe no carrinho?',
+  'Tem em amarelo, mas mais azul?',
+  'Só vim ver!',
+  'A saída é para que lado?',
+  'Este roupeiro voa montado?',
+  'Pausa de 5 minutos ativada!'
+];
+
+let screen: Screen = 'menu';
+let score = 0;
+let best = Number(localStorage.getItem('flappy-baixinho-best') ?? 0);
+let last = performance.now();
+let shake = 0;
+let jokeTimer = 0;
+let flash = 0;
+const keys: Record<string, boolean> = {};
+const bird = { x: 230, y: 280, vy: 0, rot: 0 };
+let pipes: Pipe[] = [];
+let particles: Particle[] = [];
+
+function resize(): void {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.floor(1000 * dpr);
+  canvas.height = Math.floor(650 * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
-function handleItem(it:Item){it.done=true;if(it.type==='power'&&it.power){if(it.power==='Café de Máquina')g.speed=7;if(it.power==='Chave Allen Lendária')g.allen=8;if(it.power==='Modo Sorriso Profissional')g.smile=8;if(it.power==='Pausa de 5 Minutos')g.freeze=5;if(it.power==='Crachá Dourado')g.photo=4;score+=200;say('POWER-UP: '+it.power+'!');return}if(it.type==='bed'&&g.allen<=0){mini={t:5,need:9,hit:0};say('MINIJOGO: carrega ESPAÇO para montar a cama!')}else{score+=120;chaos=clamp(chaos-5,0,100);say(quotes[Math.floor(Math.random()*quotes.length)])}}
-function spawnItems():Item[]{return Array.from({length:18},(_,i)=>makeItem(i))}function makeItem(id:number):Item{const r=Math.random(),type=r<.25?'bed':r<.5?'pillow':r<.72?'tag':r<.9?'wardrobe':'power';return{id,type,x:70+Math.random()*850,y:100+Math.random()*480,power:type==='power'?powers[Math.floor(Math.random()*powers.length)]:undefined}}function spawnCustomers():Customer[]{return Array.from({length:5},(_,i)=>({id:i,x:120+Math.random()*760,y:120+Math.random()*430,patience:70+Math.random()*30,ask:asks[i]}))}
-function draw():void{canvas.width=1000;canvas.height=650;drawStore();g.items.filter(i=>!i.done).forEach(drawItem);g.customers.forEach(drawCustomer);drawLuis(g.l,g.photo>0);if(screen!=='play'){ctx.fillStyle='#0008';ctx.fillRect(0,0,1000,650);drawLuis({x:500,y:205},false)}if(mini)drawMini();ui.score.textContent='Pontos '+score;ui.time.textContent='Tempo '+Math.ceil(time)+'s';ui.chaos.style.width=chaos+'%'}
-function drawStore():void{const grd=ctx.createLinearGradient(0,0,1000,650);grd.addColorStop(0,'#fff8d9');grd.addColorStop(1,'#e8f3ff');ctx.fillStyle=grd;ctx.fillRect(0,0,1000,650);ctx.strokeStyle='#d8e1ee';for(let x=40;x<1000;x+=80){ctx.beginPath();ctx.moveTo(x,70);ctx.lineTo(x,650);ctx.stroke()}const signs:[string,number,number,string][]=[['MÓVEA QUARTOS',30,24,'#08264a'],['PROMOÇÃO DE ROUPEIROS',690,26,'#ffd21f'],['saída? talvez',760,585,'#e63946']];signs.forEach(s=>{ctx.fillStyle=s[3];ctx.fillRect(s[1],s[2],240,38);ctx.fillStyle=s[3]==='#08264a'?'#ffd21f':'#08264a';ctx.font='bold 18px system-ui';ctx.fillText(s[0],s[1]+14,s[2]+25)});for(let i=0;i<7;i++){ctx.fillStyle=i%2?'#fff':'#dce9ff';round(80+i*130,170+(i%3)*120,95,58,12,true);ctx.fillStyle='#08264a';ctx.fillRect(90+i*130,185+(i%3)*120,75,8)}}
-function drawLuis(p:Vec,photo:boolean){ctx.save();ctx.translate(p.x,p.y);ctx.shadowColor='#0004';ctx.shadowBlur=12;ctx.fillStyle='#12345a';round(-18,12,36,28,10,true);ctx.fillStyle='#ffd21f';round(-24,-18,48,42,14,true);ctx.fillStyle='#f6c58f';ctx.beginPath();ctx.arc(0,-36,24,0,7);ctx.fill();ctx.fillStyle='#2b211f';ctx.beginPath();ctx.arc(-4,-49,24,3.2,6.2);ctx.fill();ctx.fillRect(-18,-36,36,10);ctx.fillStyle='#2b211f';ctx.fillRect(-14,-40,9,4);ctx.fillRect(6,-40,9,4);ctx.fillStyle='#fff';ctx.fillRect(-10,-28,20,5);ctx.fillStyle='#fff';round(10,-5,22,14,4,true);ctx.fillStyle='#e63946';ctx.font='8px system-ui';ctx.fillText('Luís',14,4);if(photo){ctx.save();ctx.beginPath();ctx.arc(0,-42,34,0,7);ctx.clip();if(luisPhoto.complete&&luisPhoto.naturalWidth)ctx.drawImage(luisPhoto,-34,-76,68,68);ctx.restore();ctx.strokeStyle='#ffd21f';ctx.lineWidth=5;ctx.beginPath();ctx.arc(0,-42,36,0,7);ctx.stroke()}ctx.restore()}
-function drawItem(it:Item){ctx.save();ctx.translate(it.x,it.y);ctx.fillStyle={pillow:'#fff',bed:'#75a7ff',tag:'#ffd21f',wardrobe:'#8b5e34',power:'#e63946'}[it.type];round(-20,-16,40,32,10,true);ctx.fillStyle='#08264a';ctx.font='20px system-ui';ctx.fillText({pillow:'☁️',bed:'🛏️',tag:'🏷️',wardrobe:'▥',power:'⚡'}[it.type],-11,8);ctx.restore()}
-function drawCustomer(c:Customer){ctx.fillStyle=c.happy?'#2ec27e':c.patience<30?'#e63946':'#7c5cff';ctx.beginPath();ctx.arc(c.x,c.y,18,0,7);ctx.fill();round(c.x-72,c.y-58,144,34,10,true);ctx.fillStyle='#08264a';ctx.font='11px system-ui';ctx.fillText(c.ask.slice(0,25),c.x-64,c.y-37);ctx.fillStyle='#ffd21f';ctx.fillRect(c.x-25,c.y+24,50*(c.patience/100),5)}
-function drawMini():void{if(!mini)return;const currentMini=mini;ctx.fillStyle='#08264add';round(300,235,400,150,22,true);ctx.fillStyle='#fff';ctx.font='bold 24px system-ui';ctx.fillText('MONTAR CAMA!',405,275);ctx.font='18px system-ui';ctx.fillText(`Espaço ${currentMini.hit}/${currentMini.need} · ${currentMini.t.toFixed(1)}s`,400,320)}
-function round(x:number,y:number,w:number,h:number,r:number,fill:boolean){ctx.beginPath();ctx.roundRect(x,y,w,h,r);fill?ctx.fill():ctx.stroke()}
-let last=performance.now();function loop(now:number){const dt=Math.min(.033,(now-last)/1000);last=now;if(screen==='play')update(dt);draw();requestAnimationFrame(loop)}menu();requestAnimationFrame(loop);
+
+function setPanel(html = ''): void {
+  panel.innerHTML = html;
+  panel.classList.toggle('hidden', html.length === 0);
+}
+
+function showMenu(): void {
+  screen = 'menu';
+  setPanel(`
+    <p class="eyebrow">MÓVEA apresenta</p>
+    <h1>FLAPPY BAIXINHO</h1>
+    <p>Ajuda o Luís a voar entre roupeiros, camas e placas antes que o turno comece. Um toque = uma asa. Muitos toques = provavelmente caos.</p>
+    <button id="start">COMEÇAR A VOAR</button>
+    <small>Espaço / Clique / Toque para bater asas · Recorde local: ${best}</small>
+  `);
+  document.getElementById('start')?.addEventListener('click', reset);
+}
+
+function reset(): void {
+  screen = 'playing';
+  score = 0;
+  shake = 0;
+  flash = 0;
+  jokeTimer = 1.2;
+  bird.x = 230;
+  bird.y = 280;
+  bird.vy = -220;
+  bird.rot = 0;
+  pipes = [makePipe(760), makePipe(1160), makePipe(1560)];
+  particles = [];
+  setPanel('');
+  say('Luís ganhou asas. Ninguém leu o manual.');
+}
+
+function gameOver(): void {
+  if (screen !== 'playing') return;
+  screen = 'over';
+  best = Math.max(best, score);
+  localStorage.setItem('flappy-baixinho-best', String(best));
+  shake = 18;
+  setPanel(`
+    <p class="eyebrow">Fim do voo</p>
+    <h1>O BAIXINHO BATEU NO ROUPEIRO</h1>
+    <p>Luís tentou, mas o departamento de quartos tinha demasiada gravidade.</p>
+    <div class="result"><b>${score}</b><span>pontos</span><b>${best}</b><span>recorde</span></div>
+    <button id="again">TENTAR OUTRA VEZ</button>
+  `);
+  document.getElementById('again')?.addEventListener('click', reset);
+}
+
+function flap(): void {
+  if (screen === 'menu' || screen === 'over') { reset(); return; }
+  bird.vy = -365;
+  flash = 0.12;
+  for (let i = 0; i < 10; i++) particles.push({ x: bird.x - 28, y: bird.y + 8, vx: -120 - Math.random() * 120, vy: -50 + Math.random() * 100, life: 0.55, color: i % 2 ? '#ffd21f' : '#ffffff', size: 4 + Math.random() * 6 });
+}
+
+function makePipe(x: number): Pipe {
+  return { x, gapY: 170 + Math.random() * 280, gap: 185 - Math.min(score, 16) * 3, scored: false, kind: ['roupeiro', 'cama', 'placa'][Math.floor(Math.random() * 3)] as Pipe['kind'] };
+}
+
+function say(message: string): void {
+  toast.textContent = message;
+  toast.classList.remove('hidden');
+  window.setTimeout(() => toast.classList.add('hidden'), 1500);
+}
+
+function update(dt: number): void {
+  if (screen !== 'playing') return;
+  bird.vy += 880 * dt;
+  bird.y += bird.vy * dt;
+  bird.rot = Math.max(-0.45, Math.min(0.9, bird.vy / 520));
+  jokeTimer -= dt;
+  flash = Math.max(0, flash - dt);
+
+  const speed = 230 + Math.min(score, 20) * 7;
+  for (const pipe of pipes) {
+    pipe.x -= speed * dt;
+    if (!pipe.scored && pipe.x + 84 < bird.x) {
+      pipe.scored = true;
+      score += 1;
+      say(jokes[score % jokes.length]);
+      for (let i = 0; i < 14; i++) particles.push({ x: bird.x, y: bird.y, vx: -80 + Math.random() * 160, vy: -160 + Math.random() * 80, life: 0.8, color: '#2ec27e', size: 3 + Math.random() * 5 });
+    }
+  }
+  if (pipes[0]?.x < -130) pipes.push(makePipe(pipes[pipes.length - 1].x + 390)), pipes.shift();
+
+  for (const p of particles) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 260 * dt; p.life -= dt; }
+  particles = particles.filter(p => p.life > 0);
+
+  if (bird.y < 38 || bird.y > 604) gameOver();
+  for (const pipe of pipes) {
+    const hitX = bird.x + 34 > pipe.x && bird.x - 30 < pipe.x + 92;
+    const hitY = bird.y - 30 < pipe.gapY - pipe.gap / 2 || bird.y + 30 > pipe.gapY + pipe.gap / 2;
+    if (hitX && hitY) gameOver();
+  }
+}
+
+function draw(): void {
+  ctx.save();
+  if (shake > 0) { ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake); shake *= 0.88; }
+  drawStore();
+  pipes.forEach(drawPipe);
+  particles.forEach(drawParticle);
+  drawLuisBird();
+  drawScore();
+  if (flash > 0) { ctx.fillStyle = `rgba(255,210,31,${flash})`; ctx.fillRect(0, 0, 1000, 650); }
+  ctx.restore();
+  scoreEl.textContent = `Pontos ${score}`;
+  bestEl.textContent = `Recorde ${best}`;
+}
+
+function drawStore(): void {
+  const sky = ctx.createLinearGradient(0, 0, 0, 650);
+  sky.addColorStop(0, '#eef7ff'); sky.addColorStop(0.55, '#fff6c7'); sky.addColorStop(1, '#dfe9f7');
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, 1000, 650);
+  ctx.strokeStyle = '#ffffffaa'; ctx.lineWidth = 8;
+  for (let x = -60; x < 1080; x += 180) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x + 120, 120); ctx.stroke(); }
+  ctx.fillStyle = '#08264a'; round(34, 28, 250, 48, 14); ctx.fill();
+  ctx.fillStyle = '#ffd21f'; ctx.font = '900 24px system-ui'; ctx.fillText('MÓVEA QUARTOS', 55, 60);
+  ctx.fillStyle = '#ffffff88'; for (let x = 0; x < 1000; x += 90) ctx.fillRect(x, 600, 55, 10);
+}
+
+function drawPipe(pipe: Pipe): void {
+  const topH = pipe.gapY - pipe.gap / 2;
+  const bottomY = pipe.gapY + pipe.gap / 2;
+  drawObstacle(pipe.x, -12, 92, topH + 12, pipe.kind, true);
+  drawObstacle(pipe.x, bottomY, 92, 650 - bottomY + 20, pipe.kind, false);
+}
+
+function drawObstacle(x: number, y: number, w: number, h: number, kind: Pipe['kind'], top: boolean): void {
+  ctx.save(); ctx.translate(x, y);
+  const colors = kind === 'roupeiro' ? ['#8b5e34', '#5c3b21'] : kind === 'cama' ? ['#6fa8ff', '#0b4fb3'] : ['#ffd21f', '#e63946'];
+  ctx.fillStyle = colors[0]; round(0, 0, w, h, 14); ctx.fill();
+  ctx.fillStyle = colors[1]; round(-8, top ? h - 26 : 0, w + 16, 34, 10); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.font = '900 17px system-ui'; ctx.textAlign = 'center';
+  ctx.fillText(kind === 'roupeiro' ? '▥' : kind === 'cama' ? 'CAMA' : 'PROMO', w / 2, top ? h - 6 : 24);
+  ctx.restore();
+}
+
+function drawLuisBird(): void {
+  ctx.save(); ctx.translate(bird.x, bird.y); ctx.rotate(bird.rot);
+  ctx.fillStyle = '#08264a33'; ctx.beginPath(); ctx.ellipse(8, 34, 42, 12, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#ffd21f'; ctx.beginPath(); ctx.ellipse(0, 4, 46, 34, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#ffe36d'; for (let y = -15; y < 25; y += 12) ctx.fillRect(-36, y, 72, 5);
+  ctx.fillStyle = '#12345a'; ctx.beginPath(); ctx.ellipse(-8, 31, 32, 12, 0.05, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#fff'; round(12, 8, 24, 15, 4); ctx.fill(); ctx.fillStyle = '#e63946'; ctx.font = '8px system-ui'; ctx.fillText('Luís', 16, 18);
+  ctx.fillStyle = '#f3c394'; ctx.beginPath(); ctx.arc(18, -26, 26, 0, Math.PI * 2); ctx.fill();
+  if (luisPhoto.complete && luisPhoto.naturalWidth) { ctx.save(); ctx.beginPath(); ctx.arc(18, -26, 27, 0, Math.PI * 2); ctx.clip(); ctx.drawImage(luisPhoto, -10, -58, 58, 58); ctx.restore(); }
+  else { ctx.fillStyle = '#2b211f'; ctx.beginPath(); ctx.arc(15, -40, 25, 3.25, 6.15); ctx.fill(); ctx.fillRect(0, -28, 36, 11); ctx.fillStyle = '#2b211f'; ctx.fillRect(7, -31, 9, 4); ctx.fillRect(25, -31, 9, 4); ctx.fillStyle = '#fff'; ctx.fillRect(13, -17, 20, 5); }
+  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(-30, 0, 24, 13, -0.55 - Math.sin(performance.now() / 85) * 0.28, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+function drawParticle(p: Particle): void { ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
+function drawScore(): void { ctx.fillStyle = '#08264a'; ctx.font = '900 76px system-ui'; ctx.textAlign = 'center'; ctx.fillText(String(score), 500, 108); ctx.textAlign = 'start'; }
+function round(x: number, y: number, w: number, h: number, r: number): void { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); }
+
+function loop(now: number): void { const dt = Math.min(0.033, (now - last) / 1000); last = now; update(dt); draw(); requestAnimationFrame(loop); }
+
+addEventListener('resize', resize);
+addEventListener('keydown', (event: KeyboardEvent) => { if (event.code === 'Space' || event.key === 'ArrowUp') { event.preventDefault(); if (!keys[event.code]) flap(); } keys[event.code] = true; });
+addEventListener('keyup', (event: KeyboardEvent) => { keys[event.code] = false; });
+canvas.addEventListener('pointerdown', flap);
+
+resize();
+showMenu();
+requestAnimationFrame(loop);
