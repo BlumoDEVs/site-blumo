@@ -1,6 +1,6 @@
 # LUÍS: O REI DOS QUARTOS
 
-Jogo web arcade 2D em Canvas + JavaScript, inspirado na fotografia `public/luis.jpg`.
+Jogo web arcade 2D em Vite + TypeScript + Canvas, inspirado na fotografia `public/luis.jpg`.
 
 ## Como correr
 
@@ -8,7 +8,12 @@ Jogo web arcade 2D em Canvas + JavaScript, inspirado na fotografia `public/luis.
 npm run dev
 ```
 
-Abrir http://localhost:5173. O jogo é estático e não depende de CDN nem de npm install.
+Abrir o URL indicado pelo Vite. O projeto usa Vite, TypeScript e Canvas, sem assets externos obrigatórios.
+
+## StackBlitz e Vercel
+
+- StackBlitz: abrir o projeto e correr `npm run dev`.
+- Vercel: importar o repositório; `vercel.json` usa `npm run build` e publica `dist`.
 
 ## Build de produção
 

@@ -1,1 +1,15 @@
-{"scripts":{"dev":"python3 -m http.server 5173","build":"python3 - <<'PY'\nfrom pathlib import Path\nimport shutil\nd=Path('dist'); shutil.rmtree(d, ignore_errors=True); d.mkdir(); shutil.copy('index.html', d/'index.html'); shutil.copytree('src', d/'src');\nif Path('public').exists(): shutil.copytree('public', d/'public', dirs_exist_ok=True)\nprint('Built static game in dist/')\nPY","preview":"python3 -m http.server 4173 -d dist"},"dependencies":{},"devDependencies":{}}
+{
+  "name": "luis-rei-dos-quartos",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "typescript": "latest",
+    "vite": "latest"
+  }
+}
