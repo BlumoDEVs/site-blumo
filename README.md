@@ -1,6 +1,6 @@
 # LUÍS: O REI DOS QUARTOS
 
-Jogo web arcade 2D em React + TypeScript + Canvas, inspirado na fotografia `public/luis.jpg`.
+Jogo web arcade 2D em Canvas + JavaScript, inspirado na fotografia `public/luis.jpg`.
 
 ## Como correr
 
@@ -8,7 +8,7 @@ Jogo web arcade 2D em React + TypeScript + Canvas, inspirado na fotografia `publ
 npm run dev
 ```
 
-Abrir http://localhost:5173. O jogo é estático e usa React/ReactDOM/Babel via CDN para executar o TSX no browser.
+Abrir http://localhost:5173. O jogo é estático e não depende de CDN nem de npm install.
 
 ## Build de produção
 
