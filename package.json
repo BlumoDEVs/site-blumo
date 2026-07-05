@@ -1,0 +1,12 @@
+{
+  "name": "luis-man-fuga-dos-quartos",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Jogo arcade web estático, sem dependências, pronto para testar no StackBlitz.",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "stackblitz": {
+    "startCommand": "npm start"
+  }
+}
